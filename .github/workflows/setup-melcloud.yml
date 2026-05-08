@@ -1,0 +1,27 @@
+name: Setup MELCloud Home
+
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: 'Email MELCloud Home'
+        required: true
+      password:
+        description: 'Contrasenya MELCloud Home'
+        required: true
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Amagar contrasenya dels logs
+        run: echo "::add-mask::${{ inputs.password }}"
+
+      - name: Login MELCloud Home i obtenir tokens
+        run: node setup.js "${{ inputs.email }}" "${{ inputs.password }}"
