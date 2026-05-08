@@ -15,13 +15,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Amagar contrasenya
-        run: echo "::add-mask::${{ inputs.password }}"
-
       - name: Login MELCloud Home
-        run: node setup.js "${{ inputs.email }}" "${{ inputs.password }}"
+        env:
+          MC_EMAIL: ${{ inputs.email }}
+          MC_PASS: ${{ inputs.password }}
+        run: node setup.js
