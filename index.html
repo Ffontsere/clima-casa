@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Clima · Casa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #f6f4f1;
+    --card:     #ffffff;
+    --card2:    #faf9f7;
+    --border:   #e8e3dc;
+    --text:     #1a1714;
+    --muted:    #8a7e74;
+    --accent:   #2563eb;
+    --cool:     #0284c7;
+    --heat:     #c2410c;
+    --auto:     #6d28d9;
+    --dry:      #047857;
+    --fan:      #64748b;
+    --green:    #16a34a;
+    --red:      #dc2626;
+    --shadow:   0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.05);
+    --radius:   16px;
+    --r-sm:     10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 20px 16px 40px;
+    max-width: 460px;
+    margin: 0 auto;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    margin-bottom: 22px; padding: 0 2px;
+  }
+  .header-title h1 {
+    font-size: 1.5rem; font-weight: 700; letter-spacing: -0.04em;
+    color: var(--text); line-height: 1;
+  }
+  .header-title p { font-size: 0.75rem; color: var(--muted); margin-top: 3px; }
+
+  #home-chip {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 20px;
+    background: var(--card); border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    font-size: 0.75rem; font-weight: 600; color: var(--muted);
+    cursor: pointer; transition: all .2s; user-select: none;
+  }
+  #home-chip .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--border); transition: background .2s;
+  }
+  #home-chip.home   { color: var(--green); border-color: #bbf7d0; background: #f0fdf4; }
+  #home-chip.home .dot   { background: var(--green); }
+  #home-chip.away   { color: var(--muted); }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex; gap: 3px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 4px; margin-bottom: 18px;
+    box-shadow: var(--shadow);
+  }
+  .tab {
+    flex: 1; padding: 9px 4px; text-align: center;
+    font-size: 0.78rem; font-weight: 600; border-radius: 9px;
+    cursor: pointer; transition: all .2s;
+    color: var(--muted); border: none; background: none;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .tab.active { background: var(--accent); color: white; box-shadow: 0 2px 8px rgba(37,99,235,.25); }
+
+  /* ── Sections ── */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ── Unit card ── */
+  .unit-card {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 18px;
+    margin-bottom: 12px; box-shadow: var(--shadow);
+    transition: border-color .25s;
+  }
+  .unit-card.on { border-color: #93c5fd; }
+
+  .card-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .unit-info { display: flex; align-items: center; gap: 10px; }
+  .unit-icon-wrap {
+    width: 38px; height: 38px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; background: var(--card2); border: 1px solid var(--border);
+  }
+  .unit-name  { font-size: 0.92rem; font-weight: 700; }
+  .unit-room  { font-size: 0.7rem; color: var(--muted); margin-top: 1px; }
+
+  /* Power toggle */
+  .pwr {
+    width: 46px; height: 26px; border-radius: 13px;
+    border: none; cursor: pointer; background: #e2e8f0;
+    position: relative; transition: background .2s; flex-shrink: 0;
+  }
+  .pwr::after {
+    content: ''; width: 20px; height: 20px; border-radius: 50%;
+    background: white; position: absolute; top: 3px; left: 3px;
+    transition: left .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  }
+  .pwr.on { background: var(--accent); }
+  .pwr.on::after { left: 23px; }
+
+  /* Temperatures */
+  .temps {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px; margin-bottom: 14px;
+  }
+  .temp-box {
+    background: var(--card2); border: 1px solid var(--border);
+    border-radius: var(--r-sm); padding: 10px 12px;
+  }
+  .temp-label { font-size: 0.67rem; font-weight: 500; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .04em; margin-bottom: 3px; }
+  .temp-val {
+    font-size: 1.5rem; font-weight: 700; font-family: 'DM Mono', monospace;
+    letter-spacing: -0.03em;
+  }
+  .temp-val.room { color: var(--text); }
+  .temp-val.set  { color: var(--accent); }
+
+  /* Mode pills */
+  .mode-row { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 12px; }
+  .mode-pill {
+    padding: 5px 12px; border-radius: 20px; font-size: 0.74rem; font-weight: 600;
+    border: 1.5px solid var(--border); background: var(--card2);
+    cursor: pointer; color: var(--muted); transition: all .15s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .mode-pill[data-mode="Cool"].active  { background: #eff9ff; border-color: var(--cool); color: var(--cool); }
+  .mode-pill[data-mode="Heat"].active  { background: #fff7ed; border-color: var(--heat); color: var(--heat); }
+  .mode-pill[data-mode="Automatic"].active { background: #f5f3ff; border-color: var(--auto); color: var(--auto); }
+  .mode-pill[data-mode="Dry"].active   { background: #f0fdf4; border-color: var(--dry);  color: var(--dry); }
+  .mode-pill[data-mode="Fan"].active   { background: #f8fafc; border-color: var(--fan);  color: var(--fan); }
+
+  /* Temp stepper */
+  .stepper-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .stepper-label { font-size: 0.75rem; color: var(--muted); font-weight: 500; white-space: nowrap; }
+  .stepper {
+    display: flex; align-items: stretch;
+    border: 1.5px solid var(--border); border-radius: var(--r-sm); overflow: hidden;
+    background: var(--card2);
+  }
+  .step-btn {
+    width: 36px; background: none; border: none; cursor: pointer;
+    font-size: 1.1rem; color: var(--muted); transition: background .15s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .step-btn:hover  { background: var(--border); color: var(--text); }
+  .step-num {
+    min-width: 58px; text-align: center; padding: 8px 4px;
+    font-family: 'DM Mono', monospace; font-size: 0.88rem; font-weight: 500;
+    color: var(--accent); border-left: 1.5px solid var(--border); border-right: 1.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Fan row */
+  .fan-row { display: flex; gap: 4px; }
+  .fan-pill {
+    flex: 1; padding: 5px 2px; text-align: center; font-size: 0.7rem; font-weight: 600;
+    border-radius: 7px; border: 1.5px solid var(--border); background: none;
+    cursor: pointer; color: var(--muted); transition: all .15s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .fan-pill.active {
+    background: var(--card2); border-color: var(--accent); color: var(--accent);
+  }
+
+  /* ── Config shared ── */
+  .cfg-card {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+    box-shadow: var(--shadow);
+  }
+  .cfg-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border);
+  }
+  .cfg-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .cfg-label { font-size: 0.82rem; color: var(--muted); font-weight: 500; }
+
+  input[type=text], input[type=password], input[type=number], input[type=time], select {
+    background: var(--card2); border: 1.5px solid var(--border);
+    color: var(--text); border-radius: var(--r-sm); padding: 8px 10px;
+    font-size: 0.82rem; font-family: 'Plus Jakarta Sans', sans-serif;
+    outline: none; width: 100%; transition: border-color .15s;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+
+  .toggle {
+    width: 44px; height: 24px; border-radius: 12px; border: none; cursor: pointer;
+    background: #e2e8f0; position: relative; transition: background .2s; flex-shrink: 0;
+  }
+  .toggle::after {
+    content: ''; width: 18px; height: 18px; border-radius: 50%;
+    background: white; position: absolute; top: 3px; left: 3px;
+    transition: left .2s; box-shadow: 0 1px 3px rgba(0,0,0,.15);
+  }
+  .toggle.on { background: var(--accent); }
+  .toggle.on::after { left: 23px; }
+
+  .sec-title {
+    font-size: 0.7rem; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .08em;
+    margin: 18px 0 8px; padding: 0 2px;
+  }
+  .sec-title:first-child { margin-top: 0; }
+
+  /* ── Geo cards ── */
+  .geo-card {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 14px; margin-bottom: 10px;
+    box-shadow: var(--shadow);
+  }
+  .geo-head {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+  }
+  .geo-name { font-size: 0.88rem; font-weight: 700; }
+  .geo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .geo-field label { font-size: 0.68rem; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .04em; display: block; margin-bottom: 4px; }
+
+  /* ── Schedules ── */
+  .sch-entry {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 14px; margin-bottom: 8px;
+    box-shadow: var(--shadow);
+  }
+  .sch-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .sch-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+  .days { display: flex; gap: 4px; margin-bottom: 10px; }
+  .day-btn {
+    width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--border);
+    background: var(--card2); font-size: 0.7rem; font-weight: 700;
+    cursor: pointer; color: var(--muted); transition: all .15s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .day-btn.on { background: var(--accent); border-color: var(--accent); color: white; }
+
+  .del-btn { background: none; border: none; cursor: pointer; color: #dc2626;
+    font-size: 1rem; padding: 2px 6px; border-radius: 6px; transition: background .15s; }
+  .del-btn:hover { background: #fef2f2; }
+
+  .add-btn {
+    width: 100%; padding: 12px; background: var(--card);
+    border: 1.5px dashed var(--border); border-radius: var(--radius);
+    color: var(--muted); cursor: pointer; font-size: 0.82rem; font-weight: 600;
+    transition: all .15s; font-family: 'Plus Jakarta Sans', sans-serif;
+    box-shadow: var(--shadow);
+  }
+  .add-btn:hover { border-color: var(--accent); color: var(--accent); background: #eff6ff; }
+
+  /* ── Buttons ── */
+  .btn-primary {
+    width: 100%; padding: 13px; background: var(--accent);
+    border: none; border-radius: var(--r-sm); color: white;
+    font-size: 0.88rem; font-weight: 700; cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    box-shadow: 0 2px 8px rgba(37,99,235,.3); transition: opacity .15s;
+    margin-top: 10px;
+  }
+  .btn-primary:hover { opacity: 0.92; }
+  .btn-secondary {
+    background: var(--card); color: var(--text); border: 1.5px solid var(--border);
+    box-shadow: var(--shadow);
+  }
+
+  /* ── Settings ── */
+  .settings-field { margin-bottom: 10px; }
+  .settings-field label { font-size: 0.72rem; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .04em; display: block; margin-bottom: 5px; }
+
+  /* ── Info box ── */
+  .info-box {
+    background: #eff6ff; border: 1.5px solid #bfdbfe;
+    border-radius: var(--r-sm); padding: 12px 14px; margin-bottom: 10px;
+  }
+  .info-box p { font-size: 0.78rem; color: #1e40af; line-height: 1.6; }
+  code {
+    font-family: 'DM Mono', monospace; font-size: 0.72rem;
+    background: #dbeafe; padding: 1px 5px; border-radius: 4px; color: #1d4ed8;
+  }
+
+  /* ── Loading / empty ── */
+  .loading { text-align: center; padding: 36px 0; color: var(--muted); font-size: 0.85rem; }
+  .spinner { width: 22px; height: 22px; border: 2px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin .7s linear infinite; margin: 0 auto 10px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+    background: var(--text); color: white;
+    padding: 10px 20px; border-radius: 22px; font-size: 0.82rem; font-weight: 500;
+    opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 99;
+    white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,.2);
+  }
+  #toast.show { opacity: 1; }
+
+  /* ── Last update ── */
+  #last-update { font-size: 0.68rem; color: var(--muted); text-align: right; margin-bottom: 10px; padding-right: 2px; }
+
+  .err-text { color: var(--red); font-size: 0.75rem; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-title">
+    <h1>Clima</h1>
+    <p>Casa</p>
+  </div>
+  <div id="home-chip" onclick="toggleHome()">
+    <span class="dot"></span>
+    <span id="home-text">···</span>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="goTab(this,'units')">Unitats</button>
+  <button class="tab" onclick="goTab(this,'geo')">Geofence</button>
+  <button class="tab" onclick="goTab(this,'sched')">Horaris</button>
+  <button class="tab" onclick="goTab(this,'cfg')">⚙</button>
+</div>
+
+<!-- ═══════════════ UNITATS ════════════════════════════════════════ -->
+<div id="tab-units" class="section active">
+  <div id="last-update"></div>
+  <div id="units-wrap">
+    <div class="loading"><div class="spinner"></div>Carregant unitats…</div>
+  </div>
+  <button class="btn-primary btn-secondary" onclick="loadStatus()" style="margin-top:8px">↻ Actualitzar</button>
+</div>
+
+<!-- ═══════════════ GEOFENCE ══════════════════════════════════════ -->
+<div id="tab-geo" class="section">
+  <div class="info-box">
+    <p><strong>Tasker (Android) geofence:</strong><br>
+    Profile → Location → Net/GPS → radi 300m<br>
+    Task: HTTP Request → POST<br>
+    URL: <code id="geo-url">[netlify-url]/api/geofence</code><br>
+    Header: <code>X-API-Key: [token]</code><br>
+    Body: <code>{"event":"arrive"}</code> o <code>{"event":"leave"}</code></p>
+  </div>
+
+  <div class="cfg-card">
+    <div class="cfg-row">
+      <span class="cfg-label">Geofence actiu</span>
+      <button class="toggle" id="geo-toggle" onclick="this.classList.toggle('on')"></button>
+    </div>
+  </div>
+
+  <div id="geo-units-wrap">
+    <div class="loading"><div class="spinner"></div>Carregant…</div>
+  </div>
+  <button class="btn-primary" onclick="saveGeo()">Desar geofence</button>
+</div>
+
+<!-- ═══════════════ HORARIS ══════════════════════════════════════ -->
+<div id="tab-sched" class="section">
+  <p style="font-size:.78rem;color:var(--muted);margin-bottom:10px">Horaris independents per unitat. El cron comprova cada 10 minuts.</p>
+  <div class="cfg-card" style="margin-bottom:12px">
+    <div class="cfg-row" style="padding:0">
+      <span class="cfg-label">Unitat</span>
+      <select id="sch-unit" onchange="loadSched(this.value)" style="width:auto;min-width:150px">
+        <option value="">— Selecciona —</option>
+      </select>
+    </div>
+  </div>
+  <div id="sched-wrap"></div>
+</div>
+
+<!-- ═══════════════ CONFIGURACIÓ ═════════════════════════════════ -->
+<div id="tab-cfg" class="section">
+  <div class="sec-title">Connexió</div>
+  <div class="cfg-card">
+    <div class="settings-field"><label>URL Netlify</label>
+      <input type="text" id="c-netlify" placeholder="https://clima-casa.netlify.app"></div>
+    <div class="settings-field"><label>Token API (AC_AUTH_TOKEN)</label>
+      <input type="password" id="c-token" placeholder="el teu token secret"></div>
+    <div class="settings-field"><label>Repo GitHub (user/repo)</label>
+      <input type="text" id="c-repo" placeholder="Ffontsere/clima-casa"></div>
+    <div class="settings-field"><label>GitHub PAT (per desar config)</label>
+      <input type="password" id="c-pat" placeholder="ghp_…"></div>
+    <button class="btn-primary" onclick="saveCfg()">Desar configuració</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ─── Config ─────────────────────────────────────────────────────────────────
+let NETLIFY = ls('clima_netlify') || '';
+let TOKEN   = ls('clima_token')   || '';
+let REPO    = ls('clima_repo')    || '';
+let PAT     = ls('clima_pat')     || '';
+
+let devices   = [];
+let geoConfig = { enabled: false, units: {} };
+let schedData = {};
+let homeState = null;
+
+const DAYS_CA = ['Dg','Dl','Dm','Dc','Dj','Dv','Ds'];
+const MODES   = [
+  { id:'Automatic', icon:'⟳', label:'Auto' },
+  { id:'Cool',      icon:'❄', label:'Fred' },
+  { id:'Heat',      icon:'🔥', label:'Calor' },
+  { id:'Dry',       icon:'💧', label:'Sec' },
+  { id:'Fan',       icon:'💨', label:'Vent' },
+];
+const FANS    = ['Auto','1','2','3','4','5'];
+const FAN_API = ['Auto','One','Two','Three','Four','Five'];
+
+function ls(k, v) {
+  if (v !== undefined) { localStorage.setItem(k, v); return v; }
+  return localStorage.getItem(k) || '';
+}
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('c-netlify').value = NETLIFY;
+  document.getElementById('c-token').value   = TOKEN;
+  document.getElementById('c-repo').value    = REPO;
+  document.getElementById('c-pat').value     = PAT;
+  if (REPO) { loadStatus(); loadHomeStatus(); }
+  setInterval(loadStatus, 30_000); // auto-refresh cada 30s
+});
+
+// ─── Toast ───────────────────────────────────────────────────────────────────
+let _tTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(_tTimer); _tTimer = setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+// ─── Tabs ────────────────────────────────────────────────────────────────────
+function goTab(btn, id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`tab-${id}`).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'geo')   renderGeoTab();
+  if (id === 'sched') renderSchedTab();
+}
+
+// ─── API calls ────────────────────────────────────────────────────────────────
+async function api(method, path, body) {
+  if (!NETLIFY || !TOKEN) { toast('⚙ Configura la URL i el token primer'); throw new Error('no cfg'); }
+  const r = await fetch(`${NETLIFY}/api${path}`, {
+    method, headers: { 'X-API-Key': TOKEN, 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || r.statusText); }
+  return r.json();
+}
+
+// ─── Status (llegit des de raw GitHub) ───────────────────────────────────────
+async function loadStatus() {
+  if (!REPO) return;
+  try {
+    const r   = await fetch(`https://raw.githubusercontent.com/${REPO}/main/data/status.json?t=${Date.now()}`);
+    const data = await r.json();
+    devices = data.units || [];
+    renderUnits();
+    if (data.updated_at) {
+      const ago = Math.round((Date.now() - new Date(data.updated_at).getTime()) / 60000);
+      document.getElementById('last-update').textContent = `Actualitzat fa ${ago < 1 ? 'menys d\'1' : ago} min`;
+    }
+  } catch (e) {
+    document.getElementById('units-wrap').innerHTML = `<div class="loading" style="color:var(--red)">${e.message}</div>`;
+  }
+}
+
+async function loadHomeStatus() {
+  // homeState s'emmagatzema localment
+  const saved = ls('clima_home');
+  if (saved !== '') { homeState = saved === 'home'; updateHomeChip(); }
+}
+
+function renderUnits() {
+  const w = document.getElementById('units-wrap');
+  if (!devices.length) { w.innerHTML = '<div class="loading">Cap unitat. Comprova la configuració.</div>'; return; }
+  w.innerHTML = devices.map(unitHTML).join('');
+  populateSchedSelect();
+}
+
+function unitHTML(u) {
+  const modeColor = { Cool: 'var(--cool)', Heat: 'var(--heat)', Automatic: 'var(--auto)', Dry: 'var(--dry)', Fan: 'var(--fan)' };
+  const modeIcon  = { Cool: '❄', Heat: '🔥', Automatic: '⟳', Dry: '💧', Fan: '💨' };
+  const icon = modeIcon[u.operationMode] || '⟳';
+  const fi = FAN_API.indexOf(u.setFanSpeed);
+  return `
+  <div class="unit-card ${u.power ? 'on' : ''}" id="uc-${u.id}">
+    <div class="card-top">
+      <div class="unit-info">
+        <div class="unit-icon-wrap">${icon}</div>
+        <div>
+          <div class="unit-name">${u.name}</div>
+          <div class="unit-room">${u.building || ''}</div>
+        </div>
+      </div>
+      <button class="pwr ${u.power ? 'on' : ''}" onclick="cmdPower('${u.id}',${!u.power})"></button>
+    </div>
+    <div class="temps">
+      <div class="temp-box">
+        <div class="temp-label">Sala</div>
+        <div class="temp-val room">${u.roomTemperature != null ? u.roomTemperature + '°' : '—'}</div>
+      </div>
+      <div class="temp-box">
+        <div class="temp-label">Consigna</div>
+        <div class="temp-val set" id="stv-${u.id}">${u.setTemperature != null ? u.setTemperature + '°' : '—'}</div>
+      </div>
+    </div>
+    <div class="mode-row">
+      ${MODES.map(m => `<button class="mode-pill ${u.power && u.operationMode===m.id?'active':''}" data-mode="${m.id}" onclick="cmdMode('${u.id}','${m.id}')">${m.icon} ${m.label}</button>`).join('')}
+    </div>
+    <div class="stepper-row">
+      <span class="stepper-label">Temperatura</span>
+      <div class="stepper">
+        <button class="step-btn" onclick="stepTemp('${u.id}',-0.5)">−</button>
+        <div class="step-num" id="stn-${u.id}">${u.setTemperature ?? 22}°</div>
+        <button class="step-btn" onclick="stepTemp('${u.id}',+0.5)">+</button>
+      </div>
+    </div>
+    <div class="fan-row">
+      ${FANS.map((f,i) => `<button class="fan-pill ${u.setFanSpeed===FAN_API[i]?'on':''}" onclick="cmdFan('${u.id}','${FAN_API[i]}',this)">${f}</button>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ─── Controls (via Netlify Function — instantani) ─────────────────────────────
+async function cmdPower(id, on) {
+  try { await api('PUT', `/devices/${id}`, { power: on }); toast(on ? '✓ Engegat' : '✓ Apagat'); } catch(e) { toast('⚠ ' + e.message); }
+}
+async function cmdMode(id, mode) {
+  try { await api('PUT', `/devices/${id}`, { power: true, operationMode: mode }); toast(`✓ Mode ${mode}`); } catch(e) { toast('⚠ ' + e.message); }
+}
+async function cmdFan(id, fan, btn) {
+  try {
+    await api('PUT', `/devices/${id}`, { setFanSpeed: fan });
+    btn.closest('.fan-row').querySelectorAll('.fan-pill').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on'); toast('✓ Ventilador');
+  } catch(e) { toast('⚠ ' + e.message); }
+}
+function stepTemp(id, d) {
+  const el = document.getElementById(`stn-${id}`);
+  let v = parseFloat(el.textContent) || 22;
+  v = Math.round((v + d) * 2) / 2;
+  v = Math.max(16, Math.min(31, v));
+  el.textContent = v + '°';
+  clearTimeout(el._t);
+  el._t = setTimeout(async () => {
+    try { await api('PUT', `/devices/${id}`, { setTemperature: v });
+      document.getElementById(`stv-${id}`).textContent = v + '°'; toast(`✓ ${v}°C`);
+    } catch(e) { toast('⚠ ' + e.message); }
+  }, 800);
+}
+
+// ─── Home chip ───────────────────────────────────────────────────────────────
+function updateHomeChip() {
+  const chip = document.getElementById('home-chip');
+  const txt  = document.getElementById('home-text');
+  if (homeState === null) { chip.className = ''; txt.textContent = '···'; return; }
+  chip.className = homeState ? 'home' : 'away';
+  txt.textContent = homeState ? 'A casa' : 'Fora';
+}
+async function toggleHome() {
+  homeState = !(homeState ?? false);
+  ls('clima_home', homeState ? 'home' : 'away');
+  updateHomeChip();
+  try {
+    await api('POST', '/geofence', { event: homeState ? 'arrive' : 'leave' });
+    toast(homeState ? '🏠 Geofence: a casa' : '🚗 Geofence: fora');
+  } catch(e) { toast('⚠ ' + e.message); }
+}
+
+// ─── Geofence config ─────────────────────────────────────────────────────────
+async function loadGeoConfig() {
+  if (!REPO) return;
+  try {
+    const r = await fetch(`https://raw.githubusercontent.com/${REPO}/main/data/config.json?t=${Date.now()}`);
+    const d = await r.json();
+    geoConfig = d.geofence || { enabled: false, units: {} };
+  } catch {}
+}
+
+function renderGeoTab() {
+  loadGeoConfig().then(() => {
+    const tog = document.getElementById('geo-toggle');
+    geoConfig.enabled ? tog.classList.add('on') : tog.classList.remove('on');
+    if (!NETLIFY) { document.getElementById('geo-url').textContent = '[netlify-url]/api/geofence'; }
+    else document.getElementById('geo-url').textContent = NETLIFY + '/api/geofence';
+    renderGeoUnits();
+  });
+}
+
+function renderGeoUnits() {
+  const w = document.getElementById('geo-units-wrap');
+  if (!devices.length) { w.innerHTML = '<p style="font-size:.78rem;color:var(--muted)">Carrega les unitats primer (tab Unitats)</p>'; return; }
+  w.innerHTML = devices.map(u => {
+    const uc = geoConfig.units?.[u.id] || {};
+    return `<div class="geo-card">
+      <div class="geo-head">
+        <span class="geo-name">${u.name}</span>
+        <button class="toggle ${uc.enabled?'on':''}" id="gt-${u.id}" onclick="this.classList.toggle('on')"></button>
+      </div>
+      <div class="geo-grid">
+        <div class="geo-field"><label>Refredar si sala &gt;</label>
+          <input type="number" id="gc-${u.id}" value="${uc.cool_if_above??''}" min="16" max="35" step="0.5" placeholder="°C"></div>
+        <div class="geo-field"><label>Temp. fred objectiu</label>
+          <input type="number" id="gct-${u.id}" value="${uc.cool_target??24}" min="16" max="31" step="0.5"></div>
+        <div class="geo-field"><label>Escalfar si sala &lt;</label>
+          <input type="number" id="gh-${u.id}" value="${uc.heat_if_below??''}" min="10" max="25" step="0.5" placeholder="°C"></div>
+        <div class="geo-field"><label>Temp. calor objectiu</label>
+          <input type="number" id="ght-${u.id}" value="${uc.heat_target??20}" min="10" max="31" step="0.5"></div>
+        <div class="geo-field"><label>Hora inici</label>
+          <input type="time" id="gts-${u.id}" value="${uc.time_start??''}"></div>
+        <div class="geo-field"><label>Hora fi</label>
+          <input type="time" id="gte-${u.id}" value="${uc.time_end??''}"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function saveGeo() {
+  geoConfig.enabled = document.getElementById('geo-toggle').classList.contains('on');
+  geoConfig.units = {};
+  devices.forEach(u => {
+    geoConfig.units[u.id] = {
+      name: u.name,
+      enabled: document.getElementById(`gt-${u.id}`)?.classList.contains('on') || false,
+      cool_if_above: pf(document.getElementById(`gc-${u.id}`)?.value),
+      cool_target:   pf(document.getElementById(`gct-${u.id}`)?.value),
+      heat_if_below: pf(document.getElementById(`gh-${u.id}`)?.value),
+      heat_target:   pf(document.getElementById(`ght-${u.id}`)?.value),
+      time_start: document.getElementById(`gts-${u.id}`)?.value || null,
+      time_end:   document.getElementById(`gte-${u.id}`)?.value || null,
+      fan_speed: 'Auto',
+    };
+  });
+  await saveConfig();
+}
+
+function pf(v) { const n = parseFloat(v); return isNaN(n) ? null : n; }
+
+// ─── Schedules ───────────────────────────────────────────────────────────────
+function populateSchedSelect() {
+  const sel = document.getElementById('sch-unit');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— Selecciona —</option>'
+    + devices.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
+  if (cur) { sel.value = cur; }
+}
+
+function renderSchedTab() {
+  populateSchedSelect();
+  loadGeoConfig();
+  const cur = document.getElementById('sch-unit').value;
+  if (cur) loadSched(cur);
+}
+
+async function loadSched(unitId) {
+  if (!unitId || !REPO) { document.getElementById('sched-wrap').innerHTML = ''; return; }
+  if (!schedData[unitId]) {
+    try {
+      const r = await fetch(`https://raw.githubusercontent.com/${REPO}/main/data/config.json?t=${Date.now()}`);
+      const d = await r.json();
+      for (const [k, v] of Object.entries(d.schedules || {})) schedData[k] = v;
+    } catch {}
+  }
+  if (!schedData[unitId]) schedData[unitId] = { entries: [] };
+  renderSched(unitId);
+}
+
+function renderSched(uid) {
+  const { entries } = schedData[uid];
+  const w = document.getElementById('sched-wrap');
+  w.innerHTML = entries.map((e,i) => schedHTML(uid,e,i)).join('')
+    + `<button class="add-btn" onclick="addEntry('${uid}')">+ Afegir programació</button>
+       <button class="btn-primary" onclick="saveSched('${uid}')">Desar horari</button>`;
+}
+
+function schedHTML(uid, e, i) {
+  return `<div class="sch-entry">
+    <div class="sch-top">
+      <div class="sch-controls">
+        <button class="toggle ${e.enabled?'on':''}" onclick="this.classList.toggle('on');schedData['${uid}'].entries[${i}].enabled=this.classList.contains('on')"></button>
+        <input type="time" value="${e.time}" style="width:86px" onchange="schedData['${uid}'].entries[${i}].time=this.value">
+        <select style="width:85px" onchange="schedData['${uid}'].entries[${i}].action=this.value;renderSched('${uid}')">
+          <option value="on"  ${e.action==='on' ?'selected':''}>Engegar</option>
+          <option value="off" ${e.action==='off'?'selected':''}>Apagar</option>
+        </select>
+      </div>
+      <button class="del-btn" onclick="schedData['${uid}'].entries.splice(${i},1);renderSched('${uid}')">✕</button>
+    </div>
+    <div class="days">
+      ${DAYS_CA.map((d,di) => `<button class="day-btn ${e.days.includes(di)?'on':''}" onclick="toggleDay('${uid}',${i},${di},this)">${d}</button>`).join('')}
+    </div>
+    ${e.action==='on'?`
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:.75rem;color:var(--muted);font-weight:600">Temp</span>
+        <input type="number" value="${e.temperature??22}" min="16" max="31" step="0.5" style="width:72px"
+          onchange="schedData['${uid}'].entries[${i}].temperature=parseFloat(this.value)">
+        <span style="font-size:.75rem;color:var(--muted)">°C</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:.75rem;color:var(--muted);font-weight:600">Mode</span>
+        <select style="width:100px" onchange="schedData['${uid}'].entries[${i}].mode=this.value">
+          ${MODES.map(m=>`<option value="${m.id}" ${e.mode===m.id?'selected':''}>${m.label}</option>`).join('')}
+        </select>
+      </div>
+    </div>`:''}
+  </div>`;
+}
+
+function toggleDay(uid, i, di, btn) {
+  const days = schedData[uid].entries[i].days;
+  const idx = days.indexOf(di);
+  if (idx > -1) days.splice(idx,1); else days.push(di);
+  btn.classList.toggle('on');
+}
+function addEntry(uid) {
+  schedData[uid].entries.push({ enabled:true, days:[1,2,3,4,5], time:'07:00', action:'on', temperature:22, mode:'Automatic', fanSpeed:'Auto' });
+  renderSched(uid);
+}
+
+async function saveSched(uid) {
+  // Merge schedule into config
+  const r = await fetch(`https://raw.githubusercontent.com/${REPO}/main/data/config.json?t=${Date.now()}`);
+  const cfg = await r.json();
+  if (!cfg.schedules) cfg.schedules = {};
+  cfg.schedules[uid] = schedData[uid];
+  await commitConfig(cfg);
+}
+
+// ─── Config save (via GitHub API) ─────────────────────────────────────────────
+async function saveConfig() {
+  // Read full config, merge geofence
+  const r   = await fetch(`https://raw.githubusercontent.com/${REPO}/main/data/config.json?t=${Date.now()}`);
+  const cfg = await r.json();
+  cfg.geofence = geoConfig;
+  await commitConfig(cfg);
+  toast('✓ Configurat desat a GitHub');
+}
+
+async function commitConfig(cfg) {
+  if (!PAT || !REPO) { toast('⚙ Necessites GitHub PAT i repo a la configuració'); return; }
+  // Get current SHA
+  const fr = await fetch(`https://api.github.com/repos/${REPO}/contents/data/config.json`,
+    { headers: { Authorization: `token ${PAT}`, Accept: 'application/vnd.github.v3+json' } });
+  const fd = await fr.json();
+  const sha = fd.sha;
+  // Commit new content
+  await fetch(`https://api.github.com/repos/${REPO}/contents/data/config.json`, {
+    method: 'PUT',
+    headers: { Authorization: `token ${PAT}`, 'Content-Type': 'application/json', Accept: 'application/vnd.github.v3+json' },
+    body: JSON.stringify({ message: '⚡ Actualitza config', content: btoa(unescape(encodeURIComponent(JSON.stringify(cfg, null, 2)))), sha }),
+  });
+  toast('✓ Configurat desat');
+}
+
+// ─── Settings ────────────────────────────────────────────────────────────────
+function saveCfg() {
+  NETLIFY = ls('clima_netlify', document.getElementById('c-netlify').value.trim().replace(/\/$/,''));
+  TOKEN   = ls('clima_token',   document.getElementById('c-token').value.trim());
+  REPO    = ls('clima_repo',    document.getElementById('c-repo').value.trim());
+  PAT     = ls('clima_pat',     document.getElementById('c-pat').value.trim());
+  toast('✓ Configurat desat');
+  if (REPO) setTimeout(loadStatus, 200);
+}
+</script>
+</body>
+</html>
