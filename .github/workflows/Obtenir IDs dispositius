@@ -1,0 +1,54 @@
+name: Obtenir IDs dispositius
+
+on:
+  workflow_dispatch:
+
+jobs:
+  get-devices:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Llistar unitats MELCloud Home
+        env:
+          MELCLOUD_REFRESH_TOKEN: ${{ secrets.MELCLOUD_REFRESH_TOKEN }}
+        run: |
+          node << 'SCRIPT'
+          const AUTH = 'https://auth.melcloudhome.com';
+          const BASE = 'https://mobile.bff.melcloudhome.com';
+          const UA   = 'MonitorAndControl.App.Mobile/52 CFNetwork/3860.400.51 Darwin/25.3.0';
+
+          // Refresh token → access token
+          const tr = await fetch(`${AUTH}/connect/token`, {
+            method: 'POST',
+            headers: {'Content-Type':'application/x-www-form-urlencoded','User-Agent':UA},
+            body: new URLSearchParams({
+              grant_type:'refresh_token',
+              refresh_token: process.env.MELCLOUD_REFRESH_TOKEN,
+              client_id:'homemobile'
+            })
+          });
+          const {access_token} = await tr.json();
+
+          // Obtenir dispositius
+          const dr = await fetch(`${BASE}/context`, {
+            headers: {Authorization:`Bearer ${access_token}`, 'User-Agent':UA}
+          });
+          const ctx = await dr.json();
+
+          console.log('\n════════════════════════════════════════════');
+          console.log('         IDs de les teves unitats');
+          console.log('════════════════════════════════════════════');
+          for (const bld of ctx.buildings || []) {
+            for (const u of bld.airToAirUnits || []) {
+              console.log(`\nNom:  ${u.name}`);
+              console.log(`ID:   ${u.id}`);
+              console.log(`Temp: ${u.roomTemperature}°C`);
+              console.log(`Estat: ${u.power ? 'ENCÈS' : 'APAGAT'}`);
+            }
+          }
+          console.log('\n════════════════════════════════════════════');
+          SCRIPT
+          
