@@ -1,0 +1,31 @@
+name: Comanda AC
+
+on:
+  repository_dispatch:
+    types: [control, geofence]
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Executar comanda
+        env:
+          MELCLOUD_REFRESH_TOKEN: ${{ secrets.MELCLOUD_REFRESH_TOKEN }}
+          CMD_TYPE:    ${{ github.event.action }}
+          CMD_PAYLOAD: ${{ toJSON(github.event.client_payload) }}
+        run: node scripts/command.js
+
+      - name: Desar status.json
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git add data/status.json
+          git diff --staged --quiet && echo "Sense canvis" || (git commit -m "⚡ Status [skip ci]" && git push)
